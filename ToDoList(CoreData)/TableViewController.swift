@@ -7,9 +7,11 @@
 //
 
 import UIKit
+import CoreData
+
 
 class TableViewController: UITableViewController {
-    var array : [String] = []
+    var array : [Task] = []
     
     @IBAction func saveTask(_ sender: UIBarButtonItem) {
         //добавляем АлертКонтроллер
@@ -21,7 +23,7 @@ class TableViewController: UITableViewController {
             // добираемся до текстового полоя АлертКонтроллера
             let tf = alert.textFields?.first
             if let newTask = tf?.text { //если можем получить текст из текстового поля tf - присваеваем переменной newTask(новое задание)
-                self.array.insert(newTask, at: self.array.count) //добавление нового элемента в массив array
+                self.saveTask(withTitle : newTask) //метод для сохранения newTask в CoreData
                 self.tableView.reloadData() // перерисовка таблицы для отображения нового элемента
             }
         }
@@ -40,6 +42,31 @@ class TableViewController: UITableViewController {
         present(alert, animated: true, completion: nil)
     }
     
+    //реализация метода saveTask(withTitle : _)
+    private func saveTask(withTitle title: String){
+        //добираемся до viewContext свойства persistentContainer Core Data Stack
+        let appDelegate = UIApplication.shared.delegate as! AppDelegate
+        let context = appDelegate.persistentContainer.viewContext
+        
+        //добираемся до сущности Task
+        guard let entity = NSEntityDescription.entity(forEntityName: "Task", in: context) else { return }
+         //получаем task-объект
+        let taskObject = Task(entity: entity, insertInto: context)
+        
+        //помещаем заголовок в task-объект
+        taskObject.title = title
+        
+        //сохраняем context чтоб изменения попали в базу данных
+        do {
+            try context.save()
+        }
+        catch let error as NSError {
+            print(error.localizedDescription)
+        }
+        
+        
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -53,20 +80,19 @@ class TableViewController: UITableViewController {
     // MARK: - Table view data source
 
     override func numberOfSections(in tableView: UITableView) -> Int {
-        // #warning Incomplete implementation, return the number of sections
         return 1
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        // #warning Incomplete implementation, return the number of rows
-        return array.count
+      return array.count
     }
 
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
 
-        cell.textLabel?.text = array[indexPath.row] //записвываем в каждую строку таблицы значение из массива
+        let task = array[indexPath.row] //записвываем в переменную task значение из массива типа Task
+        cell.textLabel?.text = task.title //записвываем в каждую строку таблицы значение из перемнной типа Task и его свойства title
 
         return cell
     }
