@@ -13,6 +13,12 @@ import CoreData
 class TableViewController: UITableViewController {
     var array : [Task] = []
     
+    //метод для получения context свойства persistentContainer Core Data Stack
+    private func getContext() -> NSManagedObjectContext {
+        let appDelegate = UIApplication.shared.delegate as! AppDelegate
+        return appDelegate.persistentContainer.viewContext
+    }
+    
     @IBAction func saveTask(_ sender: UIBarButtonItem) {
         //добавляем АлертКонтроллер
         let alert = UIAlertController(title: "New Task", message: "Add new task", preferredStyle: .alert)
@@ -42,11 +48,11 @@ class TableViewController: UITableViewController {
         present(alert, animated: true, completion: nil)
     }
     
-    //реализация метода saveTask(withTitle : _)
+    //реализация метода saveTask(withTitle : _) для сохранения данных в CoreData
     private func saveTask(withTitle title: String){
         //добираемся до viewContext свойства persistentContainer Core Data Stack
-        let appDelegate = UIApplication.shared.delegate as! AppDelegate
-        let context = appDelegate.persistentContainer.viewContext
+        
+        let context = getContext()
         
         //добираемся до сущности Task
         guard let entity = NSEntityDescription.entity(forEntityName: "Task", in: context) else { return }
@@ -59,6 +65,7 @@ class TableViewController: UITableViewController {
         //сохраняем context чтоб изменения попали в базу данных
         do {
             try context.save()
+            array.append(taskObject)
         }
         catch let error as NSError {
             print(error.localizedDescription)
@@ -67,14 +74,47 @@ class TableViewController: UITableViewController {
         
     }
     
+    //для отображения данных используем метод viewWillAppear
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        //получаем context чтоб из этого contexta  можно было получить объекты хранящиеся по сущности Task
+        let context = getContext()
+        
+        //создаем запрос по которому можно получить все объекты хранящиеся в энтити Task
+        let fetchRequest: NSFetchRequest<Task> = Task.fetchRequest()
+        
+        //получаем наши объекты
+        do {
+            array = try context.fetch(fetchRequest)
+        }catch let error as NSError{
+            print(error.localizedDescription)
+        }
+        
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        // Uncomment the following line to preserve selection between presentations
-        // self.clearsSelectionOnViewWillAppear = false
-
-        // Uncomment the following line to display an Edit button in the navigation bar for this view controller.
-        // self.navigationItem.rightBarButtonItem = self.editButtonItem
+      
+       /*
+        //удаление всего из CoreData
+        let context = getContext()
+        //создаем запрос по которому можно получить все объекты хранящиеся в энтити Task
+        let fetchRequest: NSFetchRequest<Task> = Task.fetchRequest()
+        if let result = try? context.fetch(fetchRequest){
+            for object in result{
+                context.delete(object)
+            }
+        }
+        //сохраняем context чтоб изменения попали в базу данных
+            do {
+                try context.save()
+            }
+            catch let error as NSError {
+                print(error.localizedDescription)
+            }
+        
+        */
     }
 
     // MARK: - Table view data source
